@@ -8,12 +8,28 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 20px; }
-        header { max-width: 900px; margin: 0 auto 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        header { max-width: 900px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
         .user-info { font-size: 0.9rem; color: #94a3b8; display: block; margin-top: 4px; }
         .btn-logout { background: #ef4444; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-logout:hover { background: #dc2626; }
         
         main { max-width: 900px; margin: 0 auto; }
+
+        /* AVISO DE SEGURANÇA */
+        .alert-warning {
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+        .alert-warning strong { color: #ef4444; }
+
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
         h2 { color: #22c55e; margin-bottom: 15px; font-size: 1.3rem; }
         
@@ -24,13 +40,15 @@
         .btn-add:hover { background: #16a34a; }
 
         .script-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-top: 15px; }
-        .script-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .script-title { font-weight: 700; color: #38bdf8; }
+        .script-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .script-title { font-weight: 700; color: #38bdf8; font-size: 1.1rem; }
+        .script-author { font-size: 0.8rem; color: #a855f7; font-weight: 600; margin-bottom: 10px; display: block; }
         .stars { color: #f59e0b; font-weight: 600; }
         pre { background: #1e293b; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin: 10px 0; border: 1px solid #334155; }
         
         .rate-container { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 0.85rem; color: #94a3b8; }
         .rate-container select { width: auto; }
+        #status-msg { margin-top: 10px; font-weight: 600; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -44,6 +62,14 @@
     </header>
 
     <main>
+        <!-- AVISO DE SEGURANÇA -->
+        <div class="alert-warning">
+            <span>⚠️</span>
+            <div>
+                <strong>Atenção:</strong> Código de terceiros pode ser perigoso. Analise o script antes de executá-lo e faça isso por sua própria conta e risco.
+            </div>
+        </div>
+
         <!-- FORMULÁRIO DE ADIÇÃO DE SCRIPT -->
         <div class="card">
             <h2>Publicar Novo Script</h2>
@@ -54,7 +80,8 @@
                 <div class="form-group">
                     <textarea id="script-code" placeholder="Cole o código do seu script aqui..." required></textarea>
                 </div>
-                <button type="submit" class="btn-add">Publicar Script</button>
+                <button type="submit" class="btn-add" id="btn-pub">Publicar Script</button>
+                <div id="status-msg"></div>
             </form>
         </div>
 
@@ -72,7 +99,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // SUAS CREDENCIAIS CONFIGURADAS:
         const firebaseConfig = {
             apiKey: "AIzaSyD_kHA-qWqzE8DuziXAn9c_G9RyI1Dt2e0",
             authDomain: "script-site-yanh.firebaseapp.com",
@@ -85,18 +111,22 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        
+        // Link do seu Webhook do Discord
+        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1535855687463079976/hJiTmJLGk_UTf98dXQnG5MIbzkzNdJajMcVE4KwP31QhaNyllpvUnJV9a9Xsp6EycaZV";
 
-        // Proteção de Rota: se não estiver logado, redireciona para a tela de login
+        let usuarioAtual = "Anônimo";
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById("user-email").innerText = "Logado como: " + (user.email || user.displayName);
+                usuarioAtual = user.email || user.displayName || "Usuário Logado";
+                document.getElementById("user-email").innerText = "Logado como: " + usuarioAtual;
                 carregarScripts();
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        // Logout
         document.getElementById("btn-logout").addEventListener("click", () => {
             signOut(auth).then(() => window.location.href = "index.html");
         });
@@ -112,15 +142,49 @@
             localStorage.setItem("meus_scripts", JSON.stringify(scripts));
         }
 
-        scriptForm.addEventListener("submit", (e) => {
+        // Função para notificar o Discord
+        async function notificarDiscord(titulo, codigo, autor) {
+            const payload = {
+                username: "Bot de Scripts",
+                embeds: [{
+                    title: "📜 NOVO SCRIPT PUBLICADO!",
+                    color: 3066993, // Verde
+                    fields: [
+                        { name: "👤 Autor do Canal", value: autor, inline: false },
+                        { name: "📌 Título", value: titulo, inline: false },
+                        { name: "💻 Código", value: "```" + codigo.substring(0, 1000) + "```", inline: false }
+                    ],
+                    footer: { text: "Enviado do Portal de Scripts" }
+                }]
+            };
+
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Erro ao notificar Discord:", err);
+            }
+        }
+
+        scriptForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+            const btnPub = document.getElementById("btn-pub");
+            const statusMsg = document.getElementById("status-msg");
+
             const titulo = document.getElementById("script-title").value;
             const codigo = document.getElementById("script-code").value;
+
+            btnPub.disabled = true;
+            btnPub.innerText = "Publicando...";
 
             const novoScript = {
                 id: Date.now(),
                 titulo: titulo,
                 codigo: codigo,
+                autor: usuarioAtual,
                 avaliacoes: [5]
             };
 
@@ -128,8 +192,17 @@
             scripts.unshift(novoScript);
             salvarScripts(scripts);
 
+            // Envia para o Discord com o autor identificado
+            await notificarDiscord(titulo, codigo, usuarioAtual);
+
+            statusMsg.style.color = "#22c55e";
+            statusMsg.innerText = "✅ Script publicado e notificado no Discord!";
+
             scriptForm.reset();
             carregarScripts();
+
+            btnPub.disabled = false;
+            btnPub.innerText = "Publicar Script";
         });
 
         function calcularMedia(avaliacoes) {
@@ -149,6 +222,7 @@
 
             scripts.forEach(s => {
                 const media = calcularMedia(s.avaliacoes);
+                const autor = s.autor || "Autor Desconhecido";
                 const item = document.createElement("div");
                 item.className = "script-item";
                 item.innerHTML = `
@@ -156,6 +230,7 @@
                         <span class="script-title">${s.titulo}</span>
                         <span class="stars">★ ${media} (${s.avaliacoes.length} votos)</span>
                     </div>
+                    <span class="script-author">👤 Autor: ${autor}</span>
                     <pre><code>${escaparHTML(s.codigo)}</code></pre>
                     <div class="rate-container">
                         <span>Avaliar este script:</span>
