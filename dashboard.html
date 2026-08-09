@@ -60,8 +60,8 @@
 
         /* CONTEÚDO PRINCIPAL */
         main { max-width: 900px; margin: 0 auto; }
-        .page { display: none; } /* Esconde todas as páginas por padrão */
-        .page.active { display: block; } /* Exibe apenas a página ativa */
+        .page { display: none; } 
+        .page.active { display: block; } 
 
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 25px; margin-bottom: 25px; }
         h2 { color: #22c55e; margin-bottom: 15px; font-size: 1.3rem; }
@@ -72,12 +72,29 @@
         .btn-add { background: #22c55e; color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; font-size: 1rem; }
         .btn-add:hover { background: #16a34a; }
 
+        /* ESTRUTURA DO CARD DE SCRIPT */
         .script-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .script-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .script-title { font-weight: 700; color: #38bdf8; font-size: 1.1rem; display: block; }
         .script-author { font-size: 0.8rem; color: #a855f7; font-weight: 600; margin-top: 4px; margin-bottom: 10px; display: block; }
+        
+        /* BOTÃO DE EXCLUIR POST */
+        .btn-delete { 
+            background-color: rgba(239, 68, 68, 0.15); 
+            color: #ef4444; 
+            border: 1px solid #ef4444; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .btn-delete:hover { background-color: #ef4444; color: #fff; }
+
         pre { background: #1e293b; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; margin: 10px 0; border: 1px solid #334155; }
         
-        .admin-nav { display: none; } /* Oculto para não-admins */
+        .admin-nav { display: none; }
     </style>
 </head>
 <body>
@@ -113,15 +130,15 @@
 
     <main>
 
-        <!-- 1. PÁGINA DE SCRIPTS (VISÍVEL POR PADRÃO) -->
+        <!-- 1. PÁGINA DE SCRIPTS -->
         <section id="pag-scripts" class="page active">
             <div class="card">
-                <h2>📜 Scripts Publicados pelo Autor</h2>
+                <h2>📜 Scripts Publicados</h2>
                 <div id="scripts-list"></div>
             </div>
         </section>
 
-        <!-- 2. PÁGINA DE ADMIN (RESTRIÇÃO DE ACESSO) -->
+        <!-- 2. PÁGINA DE ADMIN -->
         <section id="pag-admin" class="page">
             <div class="card">
                 <h2>👑 Painel do Administrador</h2>
@@ -176,28 +193,22 @@
     </main>
 
     <script>
-        // 🚨 INSIRA SEU E-MAIL DE ADMIN AQUI:
         const EMAIL_ADMIN = "yanhlucas90@gmail.com";
-
-        // 🚨 NOVO WEBHOOK DE RECLAMAÇÕES DO DISCORD ATUALIZADO:
         const DISCORD_WEBHOOK_RECLAMACOES = "https://discord.com/api/webhooks/1536053839197769919/qw44wgMetlXlDtVUtab9h9rsEvIeHYaV_tEnfFoNHiIa7J2Dr63XJQi9Qm5aU0AX0Ani";
 
         const usuarioAtual = localStorage.getItem("usuario_logado") || "Anônimo";
-        document.getElementById("user-email").innerText = "Logado como: " + usuarioAtual;
+        const isAdmin = usuarioAtual.toLowerCase() === EMAIL_ADMIN.toLowerCase();
 
-        // Liberar visualização do botão Admin apenas se for a conta de admin
-        if (usuarioAtual.toLowerCase() === EMAIL_ADMIN.toLowerCase()) {
+        document.getElementById("user-email").innerText = "Logado como: " + usuarioAtual + (isAdmin ? " (Admin)" : "");
+
+        if (isAdmin) {
             document.querySelectorAll(".admin-nav").forEach(el => el.style.display = "block");
         }
 
-        // FUNÇÃO DE NAVEGAÇÃO ENTRE "PÁGINAS"
         function navegarPara(idPagina, elementoBotao) {
-            // Esconde todas as páginas
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            // Remove a seleção dos botões do menu
             document.querySelectorAll('.sidebar-menu button').forEach(b => b.classList.remove('active'));
 
-            // Ativa a página e o botão clicado
             document.getElementById(idPagina).classList.add('active');
             if (elementoBotao) elementoBotao.classList.add('active');
 
@@ -219,10 +230,10 @@
             window.location.href = "index.html";
         }
 
-        // GERENCIADOR DE SCRIPTS
         function obterScripts() { return JSON.parse(localStorage.getItem("meus_scripts") || "[]"); }
         function salvarScripts(s) { localStorage.setItem("meus_scripts", JSON.stringify(s)); }
 
+        // PUBLICAR SCRIPT
         document.getElementById("script-form").addEventListener("submit", (e) => {
             e.preventDefault();
             const titulo = document.getElementById("script-title").value;
@@ -237,17 +248,36 @@
             carregarScripts();
         });
 
+        // EXCLUIR SCRIPT (AUTOR OU ADMIN)
+        window.excluirScript = function(idScript) {
+            if (confirm("Tem certeza de que deseja excluir este script?")) {
+                let scripts = obterScripts();
+                scripts = scripts.filter(s => s.id !== idScript);
+                salvarScripts(scripts);
+                carregarScripts();
+            }
+        };
+
+        // CARREGAR LISTA DE SCRIPTS
         function carregarScripts() {
             const list = document.getElementById("scripts-list");
             const scripts = obterScripts();
             list.innerHTML = scripts.length === 0 ? "<p style='color:#94a3b8;'>Nenhum script publicado ainda.</p>" : "";
 
             scripts.forEach(s => {
+                // O botão de deletar aparece se for Admin OU se for o Autor do script
+                const podeExcluir = isAdmin || (s.autor.toLowerCase() === usuarioAtual.toLowerCase());
+
                 const item = document.createElement("div");
                 item.className = "script-item";
                 item.innerHTML = `
-                    <span class="script-title">${s.titulo}</span>
-                    <span class="script-author">👤 Autor: ${s.autor}</span>
+                    <div class="script-header">
+                        <div>
+                            <span class="script-title">${s.titulo}</span>
+                            <span class="script-author">👤 Autor: ${s.autor}</span>
+                        </div>
+                        ${podeExcluir ? `<button class="btn-delete" onclick="excluirScript(${s.id})">🗑️ Excluir</button>` : ''}
+                    </div>
                     <pre><code>${escaparHTML(s.codigo)}</code></pre>
                 `;
                 list.appendChild(item);
@@ -260,7 +290,7 @@
             document.getElementById("msg-aval").innerText = "✅ Obrigado! Sua nota (" + nota + " estrelas) foi gravada.";
         }
 
-        // ENVIO DA RECLAMAÇÃO VIA DISCORD
+        // RECLAMAÇÃO PARA O DISCORD
         document.getElementById("reclamacao-form").addEventListener("submit", async (e) => {
             e.preventDefault();
             const texto = document.getElementById("reclamacao-texto").value;
