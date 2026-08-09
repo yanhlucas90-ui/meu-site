@@ -1,162 +1,147 @@
-<!-- ESTILOS DO FORMULÁRIO -->
-<style>
-    .form-container {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 30px;
-        max-width: 450px;
-        margin: 40px auto;
-        color: #f8fafc;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Portal de Scripts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .auth-card { background-color: #1e293b; border: 1px solid #334155; padding: 35px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; }
+        h2 { margin-bottom: 20px; color: #22c55e; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: #94a3b8; }
+        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; }
+        input:focus { border-color: #22c55e; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-primary { background-color: #22c55e; color: #fff; }
+        .btn-primary:hover { background-color: #16a34a; }
+        .btn-google { background-color: #ffffff; color: #333; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-google:hover { background-color: #e2e8f0; }
+        .divider { margin: 20px 0; border-bottom: 1px solid #334155; position: relative; }
+        .divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1e293b; padding: 0 10px; color: #94a3b8; font-size: 0.8rem; }
+        #error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 15px; }
+        .toggle-mode { margin-top: 15px; font-size: 0.85rem; color: #94a3b8; }
+        .toggle-mode a { color: #22c55e; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-    .form-container h2 {
-        margin-bottom: 5px;
-        color: #22c55e;
-    }
+    <div class="auth-card">
+        <h2 id="form-title">Entrar na Conta</h2>
+        
+        <form id="auth-form">
+            <div class="input-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" required placeholder="seu@email.com">
+            </div>
+            <div class="input-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" required placeholder="Sua senha">
+            </div>
+            <button type="submit" class="btn btn-primary" id="btn-submit">Entrar</button>
+        </form>
 
-    .form-container p {
-        color: #94a3b8;
-        font-size: 0.9rem;
-        margin-bottom: 20px;
-    }
+        <div class="divider"><span>ou</span></div>
 
-    .form-group {
-        margin-bottom: 15px;
-        text-align: left;
-    }
+        <button type="button" class="btn btn-google" id="btn-google">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+            Entrar com o Google
+        </button>
 
-    .form-group label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
+        <p id="error-msg"></p>
 
-    .form-group input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 6px;
-        border: 1px solid #334155;
-        background-color: #0f172a;
-        color: #ffffff;
-        font-size: 0.95rem;
-        outline: none;
-    }
+        <p class="toggle-mode">
+            <span id="toggle-text">Não tem uma conta?</span> 
+            <a id="toggle-link">Cadastrar-se</a>
+        </p>
+    </div>
 
-    .form-group input:focus {
-        border-color: #22c55e;
-    }
+    <!-- Firebase SDK (Módulos Web) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            GoogleAuthProvider, 
+            signInWithPopup 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    .btn-submit {
-        width: 100%;
-        padding: 12px;
-        background-color: #22c55e;
-        color: #ffffff;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-
-    .btn-submit:hover {
-        background-color: #16a34a;
-    }
-
-    #status-msg {
-        margin-top: 15px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-align: center;
-    }
-</style>
-
-<!-- ESTRUTURA DO FORMULÁRIO -->
-<div class="form-container">
-    <h2>Cadastre-se</h2>
-    <p>Preencha os campos abaixo para concluir seu cadastro.</p>
-
-    <form id="discordForm">
-        <div class="form-group">
-            <label for="nome">Nome Completo *</label>
-            <input type="text" id="nome" required placeholder="Digite seu nome">
-        </div>
-
-        <div class="form-group">
-            <label for="telefone">Telefone / WhatsApp *</label>
-            <input type="tel" id="telefone" required placeholder="(00) 00000-0000">
-        </div>
-
-        <div class="form-group">
-            <label for="email">E-mail *</label>
-            <input type="email" id="email" required placeholder="seu.email@exemplo.com">
-        </div>
-
-        <button type="submit" class="btn-submit" id="btnEnviar">Enviar Cadastro</button>
-        <div id="status-msg"></div>
-    </form>
-</div>
-
-<!-- SCRIPT DE ENVIO PARA O DISCORD -->
-<script>
-    // Cole aqui o seu link do Webhook do Discord
-    const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1535855687463079976/hJiTmJLGk_UTf98dXQnG5MIbzkzNdJajMcVE4KwP31QhaNyllpvUnJV9a9Xsp6EycaZV";
-
-    document.getElementById("discordForm").addEventListener("submit", async function(event) {
-        event.preventDefault(); // Impede o recarregamento da página
-
-        const btn = document.getElementById("btnEnviar");
-        const statusMsg = document.getElementById("status-msg");
-
-        const nome = document.getElementById("nome").value.trim();
-        const telefone = document.getElementById("telefone").value.trim();
-        const email = document.getElementById("email").value.trim();
-
-        // Altera o estado do botão para o usuário ver que está enviando
-        btn.disabled = true;
-        btn.innerText = "Enviando...";
-        statusMsg.innerText = "";
-
-        // Monta o payload no formato Embed do Discord
-        const payload = {
-            username: "Notificador do Site",
-            avatar_url: "https://i.imgur.com/4M34hi2.png",
-            embeds: [{
-                title: "🌐 NOVO CADASTRO VIA SITE!",
-                color: 3066993, // Verde
-                fields: [
-                    { name: "👤 Nome Completo", value: nome, inline: false },
-                    { name: "📞 Telefone", value: telefone, inline: true },
-                    { name: "✉️ E-mail", value: email, inline: true }
-                ],
-                footer: { text: "Enviado direto do GitHub Pages" }
-            }]
+        // SUAS CREDENCIAIS DO FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_kHA-qWqzE8DuziXAn9c_G9RyI1Dt2e0",
+            authDomain: "script-site-yanh.firebaseapp.com",
+            projectId: "script-site-yanh",
+            storageBucket: "script-site-yanh.firebasestorage.app",
+            messagingSenderId: "704247631885",
+            appId: "1:704247631885:web:257784220a753c8f638544",
+            measurementId: "G-GB07JXLGTB"
         };
 
-        try {
-            const response = await fetch(DISCORD_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
-            if (response.ok) {
-                statusMsg.style.color = "#22c55e";
-                statusMsg.innerText = "✅ Cadastro enviado com sucesso!";
-                document.getElementById("discordForm").reset(); // Limpa os campos
-            } else {
-                throw new Error("Erro na resposta do servidor");
+        let isLogin = true;
+
+        const authForm = document.getElementById("auth-form");
+        const formTitle = document.getElementById("form-title");
+        const btnSubmit = document.getElementById("btn-submit");
+        const toggleLink = document.getElementById("toggle-link");
+        const toggleText = document.getElementById("toggle-text");
+        const errorMsg = document.getElementById("error-msg");
+
+        // Alternar entre Login e Cadastro
+        toggleLink.addEventListener("click", () => {
+            isLogin = !isLogin;
+            formTitle.innerText = isLogin ? "Entrar na Conta" : "Criar Nova Conta";
+            btnSubmit.innerText = isLogin ? "Entrar" : "Cadastrar";
+            toggleText.innerText = isLogin ? "Não tem uma conta?" : "Já tem uma conta?";
+            toggleLink.innerText = isLogin ? "Cadastrar-se" : "Entrar";
+            errorMsg.innerText = "";
+        });
+
+        // Login / Cadastro com E-mail e Senha
+        authForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorMsg.innerText = "";
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                if (isLogin) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                }
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                errorMsg.innerText = traduzirErro(error.code);
             }
-        } catch (error) {
-            statusMsg.style.color = "#ef4444";
-            statusMsg.innerText = "❌ Falha ao enviar. Tente novamente.";
-            console.error("Erro:", error);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Enviar Cadastro";
+        });
+
+        // Login com Google
+        document.getElementById("btn-google").addEventListener("click", async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                errorMsg.innerText = "Erro ao conectar com a conta do Google.";
+            }
+        });
+
+        function traduzirErro(code) {
+            switch(code) {
+                case 'auth/user-not-found': return 'Usuário não encontrado.';
+                case 'auth/wrong-password': return 'Senha incorreta.';
+                case 'auth/invalid-credential': return 'E-mail ou senha incorretos.';
+                case 'auth/email-already-in-use': return 'Este e-mail já está em uso.';
+                case 'auth/weak-password': return 'A senha precisa ter no mínimo 6 caracteres.';
+                default: return 'Falha na autenticação. Verifique os dados.';
+            }
         }
-    });
-</script>
+    </script>
+</body>
+</html>
