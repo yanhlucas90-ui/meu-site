@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro e Login - Portal de Scripts</title>
+    <title>Acesso - Portal de Scripts</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .auth-card { background-color: #1e293b; border: 1px solid #334155; padding: 35px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .auth-card { background-color: #1e293b; border: 1px solid #334155; padding: 35px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; }
         h2 { margin-bottom: 5px; color: #22c55e; }
         p.sub { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
         .input-group { margin-bottom: 15px; text-align: left; }
         label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: #94a3b8; font-weight: 600; }
         input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; outline: none; }
         input:focus { border-color: #22c55e; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; font-size: 0.95rem; }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
         .btn-primary { background-color: #22c55e; color: #fff; }
         .btn-primary:hover { background-color: #16a34a; }
         .btn-google { background-color: #ffffff; color: #333; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; }
-        .btn-google:hover { background-color: #e2e8f0; }
         .divider { margin: 20px 0; border-bottom: 1px solid #334155; position: relative; }
         .divider span { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1e293b; padding: 0 10px; color: #94a3b8; font-size: 0.8rem; }
         #status-msg { margin-top: 15px; font-size: 0.85rem; font-weight: 600; }
@@ -28,10 +27,10 @@
 <body>
 
     <div class="auth-card">
-        <h2>Cadastre-se</h2>
-        <p class="sub">Preencha os campos abaixo para acessar os scripts.</p>
+        <h2>Acessar o Portal</h2>
+        <p class="sub">Faça seu cadastro para liberar os scripts.</p>
         
-        <form id="discordForm">
+        <form id="cadastroForm">
             <div class="input-group">
                 <label for="nome">Nome Completo *</label>
                 <input type="text" id="nome" required placeholder="Digite seu nome">
@@ -44,7 +43,7 @@
                 <label for="email">E-mail *</label>
                 <input type="email" id="email" required placeholder="seu.email@exemplo.com">
             </div>
-            <button type="submit" class="btn btn-primary" id="btnEnviar">Enviar Cadastro</button>
+            <button type="submit" class="btn btn-primary" id="btnEnviar">Entrar no Site</button>
         </form>
 
         <div class="divider"><span>ou</span></div>
@@ -57,12 +56,11 @@
         <div id="status-msg"></div>
     </div>
 
-    <!-- Firebase SDK (Módulos Web) -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // SUAS CREDENCIAIS CONFIGURADAS DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyD_kHA-qWqzE8DuziXAn9c_G9RyI1Dt2e0",
             authDomain: "script-site-yanh.firebaseapp.com",
@@ -77,73 +75,53 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // LINK DO WEBHOOK DO DISCORD
-        const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1535855687463079976/hJiTmJLGk_UTf98dXQnG5MIbzkzNdJajMcVE4KwP31QhaNyllpvUnJV9a9Xsp6EycaZV";
+        const DISCORD_WEBHOOK_CADASTROS = "https://discord.com/api/webhooks/1535855687463079976/hJiTmJLGk_UTf98dXQnG5MIbzkzNdJajMcVE4KwP31QhaNyllpvUnJV9a9Xsp6EycaZV";
 
-        // ENVIO DO FORMULÁRIO PARA O DISCORD
-        document.getElementById("discordForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
-
-            const btn = document.getElementById("btnEnviar");
-            const statusMsg = document.getElementById("status-msg");
-
-            const nome = document.getElementById("nome").value.trim();
-            const telefone = document.getElementById("telefone").value.trim();
-            const email = document.getElementById("email").value.trim();
-
-            btn.disabled = true;
-            btn.innerText = "Enviando...";
-            statusMsg.innerText = "";
-
+        async function notificarEntradaDiscord(nome, telefone, email, metodo) {
             const payload = {
-                username: "Notificador do Site",
-                avatar_url: "https://i.imgur.com/4M34hi2.png",
+                username: "Notificador de Acessos",
                 embeds: [{
-                    title: "🌐 NOVO CADASTRO VIA SITE!",
-                    color: 3066993, // Verde
+                    title: "👤 NOVO USUÁRIO ENTROU NO SITE!",
+                    color: 3066993,
                     fields: [
-                        { name: "👤 Nome Completo", value: nome, inline: false },
+                        { name: "👤 Nome", value: nome, inline: false },
                         { name: "📞 Telefone", value: telefone, inline: true },
-                        { name: "✉️ E-mail", value: email, inline: true }
+                        { name: "✉️ E-mail", value: email, inline: true },
+                        { name: "🔑 Método de Entrada", value: metodo, inline: false }
                     ],
-                    footer: { text: "Enviado direto do GitHub Pages" }
+                    footer: { text: "Registro de Acesso do Portal" }
                 }]
             };
 
             try {
-                const response = await fetch(DISCORD_WEBHOOK_URL, {
+                await fetch(DISCORD_WEBHOOK_CADASTROS, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
+            } catch (e) { console.error(e); }
+        }
 
-                if (response.ok) {
-                    statusMsg.style.color = "#22c55e";
-                    statusMsg.innerText = "✅ Cadastro enviado! Redirecionando...";
-                    setTimeout(() => {
-                        window.location.href = "dashboard.html";
-                    }, 1000);
-                } else {
-                    throw new Error("Erro na resposta do servidor");
-                }
-            } catch (error) {
-                statusMsg.style.color = "#ef4444";
-                statusMsg.innerText = "❌ Falha ao enviar. Tente novamente.";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Enviar Cadastro";
-            }
+        document.getElementById("cadastroForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById("nome").value;
+            const telefone = document.getElementById("telefone").value;
+            const email = document.getElementById("email").value;
+
+            localStorage.setItem("usuario_logado", email);
+            await notificarEntradaDiscord(nome, telefone, email, "Cadastro Manual");
+            window.location.href = "dashboard.html";
         });
 
-        // LOGIN COM GOOGLE
         document.getElementById("btn-google").addEventListener("click", async () => {
-            const statusMsg = document.getElementById("status-msg");
             try {
-                await signInWithPopup(auth, provider);
+                const res = await signInWithPopup(auth, provider);
+                const user = res.user;
+                localStorage.setItem("usuario_logado", user.email);
+                await notificarEntradaDiscord(user.displayName || "Usuário Google", "Não Informado", user.email, "Conta Google");
                 window.location.href = "dashboard.html";
             } catch (error) {
-                statusMsg.style.color = "#ef4444";
-                statusMsg.innerText = "Erro ao conectar com a conta do Google.";
+                document.getElementById("status-msg").innerText = "Erro ao logar com o Google.";
             }
         });
     </script>
