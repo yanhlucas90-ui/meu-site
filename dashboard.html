@@ -8,10 +8,104 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; padding: 20px; }
-        header { max-width: 900px; margin: 0 auto 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+
+        /* CABEÇALHO */
+        header { 
+            max-width: 900px; 
+            margin: 0 auto 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #334155; 
+            padding-bottom: 15px; 
+        }
+
+        .header-left { display: flex; align-items: center; gap: 15px; }
+
+        /* BOTÃO DAS TRÊS BARRINHAS (MENU HAMBÚRGUER) */
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #22c55e;
+            font-size: 1.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .menu-btn:hover { background: #1e293b; }
+
         .user-info { font-size: 0.9rem; color: #94a3b8; display: block; margin-top: 4px; }
         .btn-logout { background: #ef4444; color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-logout:hover { background: #dc2626; }
+
+        /* MENU LATERAL (SIDEBAR) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background-color: #1e293b;
+            border-right: 1px solid #334155;
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            padding: 25px 20px;
+        }
+        .sidebar.active { left: 0; }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .sidebar-header h3 { color: #22c55e; font-size: 1.2rem; }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: #fff; }
+
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin-bottom: 12px; }
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 12px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+        }
+        .sidebar-menu a:hover {
+            background-color: #0f172a;
+            color: #22c55e;
+        }
+
+        /* OVERLAY (FUNDO ESCURO QUANDO O MENU ABRE) */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            z-index: 999;
+        }
+        .overlay.active { display: block; }
         
         main { max-width: 900px; margin: 0 auto; }
 
@@ -53,17 +147,37 @@
 </head>
 <body>
 
+    <!-- OVERLAY ESCURO -->
+    <div class="overlay" id="overlay" onclick="fecharMenu()"></div>
+
+    <!-- MENU LATERAL (SIDEBAR) -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📌 Navegação</h3>
+            <button class="close-btn" onclick="fecharMenu()">✕</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="#publicar" onclick="fecharMenu()">➕ Publicar Script</a></li>
+            <li><a href="#scripts-list" onclick="fecharMenu()">📜 Scripts Publicados</a></li>
+            <li><a href="#avisos" onclick="fecharMenu()">⚠️ Aviso de Segurança</a></li>
+        </ul>
+    </aside>
+
     <header>
-        <div>
-            <h1>Portal de Scripts</h1>
-            <span class="user-info" id="user-email">Verificando sessão...</span>
+        <div class="header-left">
+            <!-- TRÊS BARRINHAS DO MENU -->
+            <button class="menu-btn" onclick="abrirMenu()" title="Abrir Menu">☰</button>
+            <div>
+                <h1>Portal de Scripts</h1>
+                <span class="user-info" id="user-email">Verificando sessão...</span>
+            </div>
         </div>
         <button class="btn-logout" id="btn-logout">Sair</button>
     </header>
 
     <main>
         <!-- AVISO DE SEGURANÇA -->
-        <div class="alert-warning">
+        <div class="alert-warning" id="avisos">
             <span>⚠️</span>
             <div>
                 <strong>Atenção:</strong> Código de terceiros pode ser perigoso. Analise o script antes de executá-lo e faça isso por sua própria conta e risco.
@@ -71,7 +185,7 @@
         </div>
 
         <!-- FORMULÁRIO DE ADIÇÃO DE SCRIPT -->
-        <div class="card">
+        <div class="card" id="publicar">
             <h2>Publicar Novo Script</h2>
             <form id="script-form">
                 <div class="form-group">
@@ -93,6 +207,19 @@
             </div>
         </div>
     </main>
+
+    <!-- FUNÇÕES DO MENU HAMBÚRGUER -->
+    <script>
+        function abrirMenu() {
+            document.getElementById('sidebar').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function fecharMenu() {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+    </script>
 
     <!-- Firebase SDK -->
     <script type="module">
