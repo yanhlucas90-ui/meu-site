@@ -112,7 +112,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // Link do seu Webhook do Discord
+        // Webhook do Discord
         const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1535855687463079976/hJiTmJLGk_UTf98dXQnG5MIbzkzNdJajMcVE4KwP31QhaNyllpvUnJV9a9Xsp6EycaZV";
 
         let usuarioAtual = "Anônimo";
@@ -142,13 +142,12 @@
             localStorage.setItem("meus_scripts", JSON.stringify(scripts));
         }
 
-        // Função para notificar o Discord
         async function notificarDiscord(titulo, codigo, autor) {
             const payload = {
                 username: "Bot de Scripts",
                 embeds: [{
                     title: "📜 NOVO SCRIPT PUBLICADO!",
-                    color: 3066993, // Verde
+                    color: 3066993,
                     fields: [
                         { name: "👤 Autor do Canal", value: autor, inline: false },
                         { name: "📌 Título", value: titulo, inline: false },
@@ -192,7 +191,6 @@
             scripts.unshift(novoScript);
             salvarScripts(scripts);
 
-            // Envia para o Discord com o autor identificado
             await notificarDiscord(titulo, codigo, usuarioAtual);
 
             statusMsg.style.color = "#22c55e";
